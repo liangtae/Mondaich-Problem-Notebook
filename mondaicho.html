@@ -1,0 +1,1279 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>問題帳 Mondaichō — Catatan Pemecahan Masalah</title>
+<meta name="description" content="Mondaichō (問題帳) adalah notebook masalah bergaya Jepang untuk membedah setiap masalah dengan metode 5W+1H, lengkap dengan tag, prioritas, pin, pencarian, dan pagination — 100% berjalan di browser, data tersimpan lokal.">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Shippori+Mincho:wght@500;600;800&family=Zen+Kaku+Gothic+New:wght@400;500;700&display=swap" rel="stylesheet">
+<style>
+  :root{
+    --bg:#F4EDE4; --bg-alt:#ECE1CC; --surface:#FBF7EF; --surface-2:#FFFDF9;
+    --ink:#1C1B19; --ink-soft:#6b6255; --border:#DED0AE;
+    --ai:#2A4B7C; --ai-soft:#E7EEF6;
+    --shu:#C1440E; --shu-soft:#FBE7DD;
+    --matcha:#5C7A4B; --matcha-soft:#E9F0E1;
+    --gold:#B4881D; --shadow:rgba(40,32,15,0.10);
+    --radius:14px;
+  }
+  [data-theme="dark"]{
+    --bg:#171613; --bg-alt:#1D1B17; --surface:#242119; --surface-2:#2A271E;
+    --ink:#EFE7D4; --ink-soft:#B3A88F; --border:#3C3626;
+    --ai:#8FB0DE; --ai-soft:#233145;
+    --shu:#E27C48; --shu-soft:#3A2317;
+    --matcha:#9CC084; --matcha-soft:#233120;
+    --gold:#E3C05C; --shadow:rgba(0,0,0,0.45);
+  }
+  *{box-sizing:border-box;}
+  body{margin:0;}
+  html,body{
+    background:
+      radial-gradient(circle at 15% 8%, var(--bg-alt) 0%, transparent 45%),
+      radial-gradient(circle at 90% 85%, var(--bg-alt) 0%, transparent 40%),
+      var(--bg);
+    color:var(--ink);
+    font-family:'Zen Kaku Gothic New', 'Segoe UI', sans-serif;
+    min-height:100vh;
+    transition:background .35s ease, color .35s ease;
+  }
+  h1,h2,h3,.mincho{font-family:'Shippori Mincho', serif;}
+  .wrap{max-width:1080px; margin:0 auto; padding:28px 20px 80px;}
+
+  /* ===== Header ===== */
+  header.top{text-align:center; margin-bottom:6px; position:relative;}
+  .kanji-title{font-size:38px; font-weight:800; letter-spacing:.12em; margin:0; color:var(--ink);}
+  .kanji-title small{display:block; font-family:'Zen Kaku Gothic New',sans-serif; font-size:12px; letter-spacing:.35em; color:var(--ink-soft); font-weight:500; margin-top:6px; text-transform:uppercase;}
+  .subtitle{color:var(--ink-soft); font-size:13.5px; margin:10px 0 0;}
+  .quote-box{
+    max-width:600px; margin:22px auto 4px; background:var(--surface); border:1px solid var(--border);
+    border-radius:12px; padding:18px 22px 14px; box-shadow:0 2px 10px var(--shadow); position:relative;
+  }
+  .quote-cat{
+    display:inline-block; font-size:10px; font-weight:700; letter-spacing:.06em; text-transform:uppercase;
+    background:var(--ai-soft); color:var(--ai); padding:3px 10px; border-radius:99px; margin-bottom:10px;
+  }
+  .quote-text{
+    font-family:'Shippori Mincho',serif; font-size:16px; line-height:1.6; color:var(--ink);
+    min-height:52px; display:flex; align-items:center; justify-content:center; text-align:center;
+  }
+  .quote-author{margin-top:10px; text-align:center; font-size:12px; color:var(--ink-soft); font-style:italic;}
+  .quote-fadewrap{transition:opacity .28s ease, transform .28s ease; opacity:1; transform:translateY(0);}
+  .quote-fadewrap.fading{opacity:0; transform:translateY(6px);}
+  .quote-nav{display:flex; justify-content:center; align-items:center; gap:14px; margin-top:12px;}
+  .quote-nav button{
+    background:var(--surface-2); border:1px solid var(--border); color:var(--ink);
+    padding:6px 14px; border-radius:8px; font-family:inherit; font-size:12px; font-weight:600; cursor:pointer;
+    transition:all .15s ease;
+  }
+  .quote-nav button:hover{border-color:var(--shu); color:var(--shu);}
+  .quote-counter{font-size:11px; color:var(--ink-soft); min-width:56px; text-align:center;}
+
+  .torii-divider{width:100%; max-width:340px; height:26px; margin:20px auto 26px; position:relative;}
+  .torii-divider::before,.torii-divider::after{content:"";position:absolute; top:0; width:6px; height:26px; background:var(--shu); border-radius:2px;}
+  .torii-divider::before{left:22%;}
+  .torii-divider::after{right:22%;}
+  .torii-divider span{position:absolute; left:0; right:0; top:4px; height:5px; background:var(--shu); border-radius:2px;}
+  .torii-divider span.b{top:15px; height:4px; opacity:.55;}
+
+  .theme-toggle{
+    position:absolute; right:0; top:4px;
+    width:42px; height:42px; border-radius:50%;
+    border:1px solid var(--border); background:var(--surface);
+    display:flex; align-items:center; justify-content:center;
+    cursor:pointer; font-size:18px; color:var(--ink);
+    box-shadow:0 2px 6px var(--shadow);
+    transition:transform .25s ease;
+  }
+  .theme-toggle:hover{transform:rotate(18deg) scale(1.05);}
+
+  /* ===== Toolbar ===== */
+  .toolbar{
+    display:flex; flex-wrap:wrap; gap:10px; align-items:center;
+    background:var(--surface); border:1px solid var(--border);
+    border-radius:var(--radius); padding:14px; margin-bottom:22px;
+    box-shadow:0 2px 10px var(--shadow);
+  }
+  .toolbar input[type=text], .toolbar select{
+    background:var(--surface-2); border:1px solid var(--border); color:var(--ink);
+    padding:9px 12px; border-radius:9px; font-family:inherit; font-size:13.5px; outline:none;
+  }
+  .toolbar input[type=text]{flex:1 1 200px; min-width:160px;}
+  .toolbar select{flex:0 0 auto;}
+  .toolbar input:focus, .toolbar select:focus{border-color:var(--ai);}
+  .spacer{flex:1 1 auto;}
+  .btn{
+    border:none; padding:9px 16px; border-radius:9px; cursor:pointer;
+    font-family:inherit; font-weight:600; font-size:13.5px;
+    display:inline-flex; align-items:center; gap:6px;
+    transition:transform .15s ease, box-shadow .15s ease, filter .15s ease;
+  }
+  .btn:active{transform:scale(.95);}
+  .btn-primary{background:var(--shu); color:#fff;}
+  .btn-primary:hover{filter:brightness(1.08); box-shadow:0 3px 10px var(--shadow);}
+  .btn-ghost{background:var(--surface-2); color:var(--ink); border:1px solid var(--border);}
+  .btn-ghost:hover{border-color:var(--ai);}
+  .btn-danger{background:transparent; color:var(--shu); border:1px solid var(--shu);}
+  .btn-danger:hover{background:var(--shu-soft);}
+  .btn-sm{padding:5px 10px; font-size:12px; border-radius:7px;}
+
+  /* ===== Cards ===== */
+  #emptyState{
+    text-align:center; padding:60px 20px; color:var(--ink-soft);
+  }
+  #emptyState .em-kanji{font-family:'Shippori Mincho',serif; font-size:46px; color:var(--border); margin-bottom:6px;}
+  .grid{display:grid; grid-template-columns:repeat(auto-fill,minmax(300px,1fr)); gap:16px;}
+
+  /* ===== Pagination bar ===== */
+  .pagi-bar{
+    display:flex; flex-wrap:wrap; align-items:center; justify-content:space-between; gap:12px;
+    margin-top:28px; padding:12px 16px; background:var(--surface); border:1px solid var(--border);
+    border-radius:var(--radius); box-shadow:0 2px 10px var(--shadow);
+  }
+  .pagi-range{font-size:12px; color:var(--ink-soft); white-space:nowrap;}
+  .pagi-range b{color:var(--ink); font-weight:700;}
+  .pagi-size{display:flex; align-items:center; gap:6px; font-size:12px; color:var(--ink-soft); white-space:nowrap;}
+  .pagi-size select{
+    background:var(--surface-2); border:1px solid var(--border); color:var(--ink);
+    padding:5px 8px; border-radius:7px; font-family:inherit; font-size:12px; outline:none; cursor:pointer;
+  }
+  .pagi-size select:focus{border-color:var(--ai);}
+  .pagination{display:flex; justify-content:center; align-items:center; gap:5px; flex-wrap:wrap;}
+  .page-btn{
+    min-width:32px; height:32px; padding:0 8px; border-radius:8px; border:1px solid var(--border);
+    background:var(--surface-2); color:var(--ink); font-family:inherit; font-size:12.5px; font-weight:600;
+    cursor:pointer; transition:all .15s ease;
+  }
+  .page-btn:hover:not(:disabled):not(.active){border-color:var(--ai); color:var(--ai); transform:translateY(-1px);}
+  .page-btn.active{background:var(--shu); border-color:var(--shu); color:#fff; box-shadow:0 2px 8px var(--shadow); cursor:default;}
+  .page-btn:disabled{opacity:.35; cursor:not-allowed;}
+  .page-btn.edge{font-size:11px;}
+  .page-dots{color:var(--ink-soft); padding:0 3px; font-size:13px; user-select:none;}
+  .pagi-jump{display:flex; align-items:center; gap:6px; font-size:12px; color:var(--ink-soft); white-space:nowrap;}
+  .pagi-jump input{
+    width:48px; text-align:center; background:var(--surface-2); border:1px solid var(--border); color:var(--ink);
+    padding:5px 4px; border-radius:7px; font-family:inherit; font-size:12px; outline:none;
+  }
+  .pagi-jump input:focus{border-color:var(--ai);}
+  .pagi-jump button{
+    background:var(--surface-2); border:1px solid var(--border); color:var(--ink); border-radius:7px;
+    padding:5px 10px; font-family:inherit; font-size:12px; font-weight:600; cursor:pointer; transition:all .15s ease;
+  }
+  .pagi-jump button:hover{border-color:var(--ai); color:var(--ai);}
+  @media(max-width:640px){
+    .pagi-bar{flex-direction:column; align-items:stretch; text-align:center;}
+    .pagi-range, .pagi-size, .pagi-jump{justify-content:center;}
+    .pagination{order:2;}
+  }
+  .card{
+    position:relative; background:var(--surface); border:1px solid var(--border);
+    border-radius:var(--radius); padding:16px 16px 14px; box-shadow:0 2px 8px var(--shadow);
+    animation:cardIn .35s ease;
+    overflow:hidden;
+    transition:transform .18s ease, box-shadow .18s ease, border-color .18s ease;
+  }
+  .card:hover{transform:translateY(-2px); box-shadow:0 8px 20px var(--shadow); border-color:var(--ai);}
+  @keyframes cardIn{from{opacity:0; transform:translateY(8px);} to{opacity:1; transform:translateY(0);}}
+  .card.solved{opacity:.72;}
+  .card.solved .card-title{text-decoration:line-through; text-decoration-color:var(--matcha); text-decoration-thickness:2px;}
+  .pin-fold{
+    position:absolute; top:0; right:0; width:0; height:0;
+    border-style:solid; border-width:0 26px 26px 0;
+    border-color:transparent var(--gold) transparent transparent;
+    display:none;
+  }
+  .card.pinned .pin-fold{display:block;}
+  .card-top{display:flex; justify-content:space-between; align-items:flex-start; gap:8px;}
+  .card-title{font-family:'Shippori Mincho',serif; font-size:17px; font-weight:600; margin:0 0 4px; cursor:pointer; line-height:1.35;}
+  .stars{color:var(--gold); font-size:13px; letter-spacing:1px;}
+  .status-badge{
+    font-size:10.5px; padding:3px 9px; border-radius:99px; font-weight:700; letter-spacing:.03em;
+  }
+  .status-open{background:var(--ai-soft); color:var(--ai);}
+  .status-solved{background:var(--matcha-soft); color:var(--matcha);}
+  .tags-row{display:flex; flex-wrap:wrap; gap:6px; margin:9px 0 4px;}
+  .tag-chip{
+    background:var(--ai-soft); color:var(--ai); font-size:11px; padding:3px 9px;
+    border-radius:99px; font-weight:600;
+  }
+  .card-meta{font-size:11px; color:var(--ink-soft); margin-top:8px;}
+  .card-actions{display:flex; gap:6px; margin-top:12px; flex-wrap:wrap;}
+
+  .detail{
+    max-height:0; overflow:hidden; transition:max-height .35s ease, margin-top .35s ease;
+    margin-top:0;
+  }
+  .detail.open{max-height:600px; margin-top:12px;}
+  .detail-inner{border-top:1px dashed var(--border); padding-top:10px; display:grid; gap:8px;}
+  .detail-item{font-size:12.5px; line-height:1.5;}
+  .detail-item b{font-family:'Shippori Mincho',serif; color:var(--shu); margin-right:4px;}
+  .detail-item span.jp{color:var(--ink-soft); font-size:11px; margin-left:4px;}
+  .detail-empty{color:var(--ink-soft); font-style:italic;}
+
+  /* stamp overlay */
+  .stamp{
+    position:absolute; inset:0; display:flex; align-items:center; justify-content:center;
+    pointer-events:none; z-index:5;
+  }
+  .stamp-seal{
+    font-family:'Shippori Mincho',serif; font-weight:800; font-size:15px; color:var(--shu);
+    border:3px solid var(--shu); border-radius:10px; padding:10px 14px;
+    transform:scale(2.6) rotate(-18deg); opacity:0;
+    letter-spacing:.15em;
+    box-shadow:0 0 0 2px var(--shu) inset;
+    animation:stampDown .7s cubic-bezier(.2,1.5,.4,1) forwards;
+    background:rgba(255,255,255,0.02);
+  }
+  [data-theme="dark"] .stamp-seal{background:rgba(0,0,0,0.05);}
+  @keyframes stampDown{
+    0%{opacity:0; transform:scale(2.6) rotate(-18deg);}
+    55%{opacity:.95; transform:scale(.92) rotate(-8deg);}
+    75%{transform:scale(1.05) rotate(-10deg);}
+    100%{opacity:.92; transform:scale(1) rotate(-9deg);}
+  }
+  .petal{
+    position:fixed; top:-20px; font-size:16px; z-index:999; pointer-events:none;
+    animation:fall linear forwards;
+  }
+  @keyframes fall{
+    to{ transform:translateY(110vh) translateX(var(--drift,0px)) rotate(360deg); opacity:.15; }
+  }
+
+  /* ===== Modal ===== */
+  .overlay{
+    position:fixed; inset:0; background:rgba(15,12,8,.55); backdrop-filter:blur(2px);
+    display:none; align-items:center; justify-content:center; z-index:100; padding:20px;
+  }
+  .overlay.show{display:flex; animation:fadeBg .2s ease;}
+  @keyframes fadeBg{from{opacity:0;} to{opacity:1;}}
+  .modal{
+    background:var(--surface); border:1px solid var(--border); border-radius:16px;
+    width:100%; max-width:560px; max-height:88vh; overflow-y:auto;
+    padding:24px 24px 20px; box-shadow:0 12px 40px rgba(0,0,0,.3);
+    animation:modalIn .28s cubic-bezier(.2,.9,.3,1.2);
+  }
+  @keyframes modalIn{from{opacity:0; transform:translateY(14px) scale(.98);} to{opacity:1; transform:translateY(0) scale(1);}}
+  .modal h2{margin:0 0 4px; font-size:20px;}
+  .modal .modal-sub{color:var(--ink-soft); font-size:12px; margin-bottom:18px;}
+  .field{margin-bottom:13px;}
+  .field label{display:flex; justify-content:space-between; font-size:12.5px; font-weight:700; margin-bottom:5px; color:var(--ink);}
+  .field label .jp{font-weight:500; color:var(--ink-soft); font-family:'Shippori Mincho',serif;}
+  .field input[type=text], .field textarea, .field select{
+    width:100%; background:var(--surface-2); border:1px solid var(--border); color:var(--ink);
+    padding:9px 11px; border-radius:9px; font-family:inherit; font-size:13.5px; outline:none; resize:vertical;
+  }
+  .field input:focus, .field textarea:focus, .field select:focus{border-color:var(--ai);}
+  .row2{display:grid; grid-template-columns:1fr 1fr; gap:12px;}
+  .star-pick{font-size:22px; cursor:pointer; letter-spacing:3px; color:var(--border);}
+  .star-pick span{transition:transform .1s ease;}
+  .star-pick span:hover{transform:scale(1.2);}
+  .star-pick span.on{color:var(--gold);}
+  .pin-check{display:flex; align-items:center; gap:8px; font-size:13px; font-weight:600; margin-top:2px;}
+  .modal-actions{display:flex; justify-content:flex-end; gap:8px; margin-top:18px;}
+  .close-x{
+    position:absolute; top:16px; right:18px; background:none; border:none; font-size:20px;
+    color:var(--ink-soft); cursor:pointer;
+  }
+
+  /* confirm modal */
+  .confirm-box{max-width:380px; text-align:center;}
+  .confirm-box .em-kanji{font-family:'Shippori Mincho',serif; font-size:34px; color:var(--shu);}
+
+  /* ===== Toasts ===== */
+  #toastHost{position:fixed; bottom:22px; right:22px; display:flex; flex-direction:column; gap:10px; z-index:200;}
+  .toast{
+    background:var(--surface); border:1px solid var(--border); border-left:5px solid var(--ai);
+    color:var(--ink); padding:12px 16px; border-radius:10px; font-size:13px; min-width:220px;
+    box-shadow:0 6px 18px var(--shadow);
+    animation:toastIn .32s cubic-bezier(.2,.9,.3,1.2), toastOut .3s ease 2.7s forwards;
+    display:flex; align-items:center; gap:8px;
+  }
+  .toast.success{border-left-color:var(--matcha);}
+  .toast.error{border-left-color:var(--shu);}
+  .toast .dot{width:8px; height:8px; border-radius:50%; background:var(--ai); flex:none;}
+  .toast.success .dot{background:var(--matcha);}
+  .toast.error .dot{background:var(--shu);}
+  @keyframes toastIn{from{opacity:0; transform:translateX(30px);} to{opacity:1; transform:translateX(0);}}
+  @keyframes toastOut{to{opacity:0; transform:translateX(30px);}}
+
+  footer.hint{text-align:center; color:var(--ink-soft); font-size:11.5px; margin-top:36px; letter-spacing:.03em;}
+
+  @media(max-width:520px){
+    .kanji-title{font-size:29px;}
+    .theme-toggle{position:static; margin:14px auto 0;}
+    .row2{grid-template-columns:1fr;}
+  }
+</style>
+</head>
+<body data-theme="light">
+<div class="wrap">
+
+  <header class="top">
+    <div class="theme-toggle" id="themeToggle" title="Ganti tema">☾</div>
+    <h1 class="kanji-title">問題帳<small>Mondaichō · Problem Notebook</small></h1>
+    <p class="subtitle">Bedah masalahmu dengan metode 5W + 1H — Apa, Siapa, Kapan, Dimana, Mengapa, Bagaimana.</p>
+
+    <div class="quote-box">
+      <div class="quote-fadewrap" id="quoteFadeWrap">
+        <div class="quote-cat" id="quoteCat">Filosofi</div>
+        <div class="quote-text" id="quoteText">…</div>
+        <div class="quote-author" id="quoteAuthor">—</div>
+      </div>
+      <div class="quote-nav">
+        <button id="quotePrev">‹ Sebelumnya</button>
+        <span class="quote-counter" id="quoteCounter">1 / 250</span>
+        <button id="quoteNext">Berikutnya ›</button>
+      </div>
+    </div>
+
+    <div class="torii-divider"><span></span><span class="b"></span></div>
+  </header>
+
+  <div class="toolbar">
+    <input type="text" id="searchInput" placeholder="🔍 Cari judul, isi, atau tag…">
+    <select id="tagFilter"><option value="">Semua tag</option></select>
+    <select id="statusFilter">
+      <option value="">Semua status</option>
+      <option value="open">Belum selesai</option>
+      <option value="solved">Selesai</option>
+    </select>
+    <select id="sortSelect">
+      <option value="newest">Terbaru</option>
+      <option value="oldest">Terlama</option>
+      <option value="az">Judul A–Z</option>
+      <option value="diffHigh">Kesulitan tertinggi</option>
+      <option value="diffLow">Kesulitan terendah</option>
+    </select>
+    <div class="spacer"></div>
+    <button class="btn btn-primary" id="addBtn">＋ Masalah baru</button>
+  </div>
+
+  <div class="toolbar" style="justify-content:center;">
+    <button class="btn btn-ghost btn-sm" id="exportBtn">⬇ Backup data</button>
+    <button class="btn btn-ghost btn-sm" id="importBtn">⬆ Restore data</button>
+    <input type="file" id="importFile" accept="application/json" style="display:none;">
+    <button class="btn btn-danger btn-sm" id="resetBtn">⟲ Reset semua</button>
+  </div>
+
+  <div id="emptyState" style="display:none;">
+    <div class="em-kanji">空</div>
+    <p>Belum ada masalah yang dicatat. Mulai dengan menekan <b>“＋ Masalah baru”</b>.</p>
+  </div>
+
+  <div class="grid" id="grid"></div>
+
+  <div class="pagi-bar" id="pagiBar" style="display:none;">
+    <div class="pagi-range" id="pagiRange">Menampilkan <b>0</b>–<b>0</b> dari <b>0</b></div>
+    <div class="pagination" id="pagination"></div>
+    <div style="display:flex; gap:12px; flex-wrap:wrap; align-items:center;">
+      <div class="pagi-jump">
+        <span>Ke hal.</span>
+        <input type="number" id="pageJumpInput" min="1" step="1" placeholder="#">
+        <button id="pageJumpBtn">Pergi</button>
+      </div>
+      <div class="pagi-size">
+        <span>Per halaman</span>
+        <select id="pageSizeSelect">
+          <option value="10">10</option>
+          <option value="15">15</option>
+          <option value="25">25</option>
+          <option value="50">50</option>
+          <option value="9999">Semua</option>
+        </select>
+      </div>
+    </div>
+  </div>
+
+  <footer class="hint">一期一会 — setiap masalah adalah kesempatan untuk memahami lebih dalam.</footer>
+</div>
+
+<!-- Add/Edit Modal -->
+<div class="overlay" id="formOverlay">
+  <div class="modal" style="position:relative;">
+    <button class="close-x" id="formClose">✕</button>
+    <h2 id="formTitle">Masalah baru</h2>
+    <p class="modal-sub">Isi selengkap mungkin agar analisismu lebih tajam.</p>
+
+    <div class="field">
+      <label>Judul masalah <span class="jp">題名</span></label>
+      <input type="text" id="f_title" placeholder="Contoh: Penjualan toko menurun bulan ini">
+    </div>
+
+    <div class="field">
+      <label>Apa yang terjadi? <span class="jp">何 · What</span></label>
+      <textarea id="f_what" rows="2" placeholder="Jelaskan inti masalahnya…"></textarea>
+    </div>
+    <div class="row2">
+      <div class="field">
+        <label>Siapa yang terlibat? <span class="jp">誰 · Who</span></label>
+        <textarea id="f_who" rows="2"></textarea>
+      </div>
+      <div class="field">
+        <label>Kapan terjadi? <span class="jp">いつ · When</span></label>
+        <textarea id="f_when" rows="2"></textarea>
+      </div>
+    </div>
+    <div class="row2">
+      <div class="field">
+        <label>Dimana terjadi? <span class="jp">どこ · Where</span></label>
+        <textarea id="f_where" rows="2"></textarea>
+      </div>
+      <div class="field">
+        <label>Mengapa terjadi? <span class="jp">なぜ · Why</span></label>
+        <textarea id="f_why" rows="2"></textarea>
+      </div>
+    </div>
+    <div class="field">
+      <label>Bagaimana solusinya / langkah selanjutnya? <span class="jp">どう · How</span></label>
+      <textarea id="f_how" rows="3" placeholder="Hipotesis, rencana, atau langkah penyelesaian…"></textarea>
+    </div>
+
+    <div class="row2">
+      <div class="field">
+        <label>Tag (pisahkan dengan koma)</label>
+        <input type="text" id="f_tags" placeholder="kerja, keluarga, mendesak">
+      </div>
+      <div class="field">
+        <label>Tingkat kesulitan</label>
+        <div class="star-pick" id="starPick">
+          <span data-v="1">★</span><span data-v="2">★</span><span data-v="3">★</span><span data-v="4">★</span><span data-v="5">★</span>
+        </div>
+      </div>
+    </div>
+
+    <label class="pin-check"><input type="checkbox" id="f_pin"> 📌 Sematkan (pin) di atas</label>
+
+    <div class="modal-actions">
+      <button class="btn btn-ghost" id="formCancel">Batal</button>
+      <button class="btn btn-primary" id="formSave">Simpan</button>
+    </div>
+  </div>
+</div>
+
+<!-- Confirm Modal -->
+<div class="overlay" id="confirmOverlay">
+  <div class="modal confirm-box">
+    <div class="em-kanji" id="confirmKanji">警</div>
+    <h2 id="confirmTitle">Yakin?</h2>
+    <p class="modal-sub" id="confirmMsg">Tindakan ini tidak dapat dibatalkan.</p>
+    <div class="modal-actions" style="justify-content:center;">
+      <button class="btn btn-ghost" id="confirmCancel">Batal</button>
+      <button class="btn btn-danger" id="confirmOk">Ya, lanjutkan</button>
+    </div>
+  </div>
+</div>
+
+<div id="toastHost"></div>
+
+<script>
+(function(){
+  "use strict";
+  const QUOTES = [
+    // ===== Problem Solving (50) =====
+    {t:"Kalau diberi satu jam untuk menyelamatkan dunia, gunakan 55 menit mendefinisikan masalah.", a:"Albert Einstein", c:"Problem Solving"},
+    {t:"Ajukan pertanyaan yang tepat, dan separuh masalah sudah terpecahkan.", a:"Pepatah Barat", c:"Problem Solving"},
+    {t:"Masalah tidak bisa diselesaikan dengan cara berpikir yang sama saat ia diciptakan.", a:"Albert Einstein", c:"Problem Solving"},
+    {t:"Solusi sederhana yang berhasil lebih baik dari solusi rumit yang gagal.", a:"Prinsip Rekayasa", c:"Problem Solving"},
+    {t:"Setiap masalah besar sebenarnya sekumpulan masalah kecil yang belum dipisahkan.", a:"Bulletproof Problem Solving", c:"Problem Solving"},
+    {t:"Definisikan masalah dengan jelas sebelum mencari jawabannya.", a:"Charles Kettering", c:"Problem Solving"},
+    {t:"Data yang baik mengalahkan opini yang meyakinkan.", a:"Prinsip Analitis", c:"Problem Solving"},
+    {t:"Sebuah masalah yang dipahami dengan baik sudah setengah terpecahkan.", a:"Charles Kettering", c:"Problem Solving"},
+    {t:"Jangan jatuh cinta pada hipotesis pertamamu.", a:"Metode Ilmiah", c:"Problem Solving"},
+    {t:"Uji asumsimu sebelum ia menguji dirimu.", a:"Kata Bijak", c:"Problem Solving"},
+    {t:"Pecah masalah besar menjadi bagian yang bisa digigit.", a:"Cracked It!", c:"Problem Solving"},
+    {t:"Solusi terbaik sering muncul setelah pertanyaan diubah, bukan dijawab.", a:"Kata Bijak", c:"Problem Solving"},
+    {t:"Berpikir lambat menyelamatkanmu dari keputusan cepat yang keliru.", a:"Thinking, Fast and Slow", c:"Problem Solving"},
+    {t:"Otak punya dua sistem: satu cepat naluriah, satu lambat analitis.", a:"Daniel Kahneman", c:"Problem Solving"},
+    {t:"Intuisi itu berharga, tapi verifikasi lebih berharga lagi.", a:"Daniel Kahneman", c:"Problem Solving"},
+    {t:"Kumpulkan fakta dulu, baru simpulkan teori.", a:"Sherlock Holmes", c:"Problem Solving"},
+    {t:"Ketika kau menyingkirkan yang mustahil, sisanya adalah kebenaran.", a:"Sherlock Holmes", c:"Problem Solving"},
+    {t:"Amati sebelum menyimpulkan, dengarkan sebelum menilai.", a:"Mastermind: Sherlock Holmes", c:"Problem Solving"},
+    {t:"Detail kecil sering menyimpan jawaban dari masalah besar.", a:"Kata Bijak", c:"Problem Solving"},
+    {t:"Rumuskan hipotesis, uji, lalu revisi tanpa gengsi.", a:"Metode MECE", c:"Problem Solving"},
+    {t:"Pisahkan masalah menjadi bagian yang saling lepas dan menyeluruh.", a:"Prinsip MECE", c:"Problem Solving"},
+    {t:"Pohon masalah yang rapi menuntun ke akar penyebab.", a:"Bulletproof Problem Solving", c:"Problem Solving"},
+    {t:"Jangan menyelesaikan gejala jika akar masalah belum ditemukan.", a:"Kata Bijak", c:"Problem Solving"},
+    {t:"Tanyakan 'mengapa' lima kali untuk sampai ke akar masalah.", a:"Teknik 5 Whys", c:"Problem Solving"},
+    {t:"Kesalahan terbaik adalah kesalahan yang cepat ditemukan.", a:"Kata Bijak", c:"Problem Solving"},
+    {t:"Berhenti mencari siapa yang salah, mulai cari apa yang salah.", a:"Kata Bijak", c:"Problem Solving"},
+    {t:"Cara kau membingkai masalah menentukan solusi yang kau lihat.", a:"Problem Solving 101", c:"Problem Solving"},
+    {t:"Ubah sudut pandang, dan masalah lama tampak baru.", a:"Kata Bijak", c:"Problem Solving"},
+    {t:"Kreativitas adalah menghubungkan hal yang tampak tak berkaitan.", a:"Steve Jobs", c:"Problem Solving"},
+    {t:"Bertanya dengan rasa ingin tahu, bukan menuduh.", a:"Kata Bijak", c:"Problem Solving"},
+    {t:"Solusi yang elegan itu sederhana, bukan mudah.", a:"Kata Bijak", c:"Problem Solving"},
+    {t:"Sebelum memperbaiki, pahami dulu sistemnya secara utuh.", a:"Berpikir Sistem", c:"Problem Solving"},
+    {t:"Masalah yang diabaikan tumbuh, masalah yang dipahami menyusut.", a:"Kata Bijak", c:"Problem Solving"},
+    {t:"Brainstorming yang baik menunda penilaian, bukan ide.", a:"Cracked It!", c:"Problem Solving"},
+    {t:"Kuantitas ide melahirkan kualitas solusi.", a:"Linus Pauling", c:"Problem Solving"},
+    {t:"Uji cepat, gagal murah, belajar lebih murah lagi.", a:"Prinsip Iteratif", c:"Problem Solving"},
+    {t:"Prototipe kasar lebih berguna dari rencana sempurna di kepala.", a:"Kata Bijak", c:"Problem Solving"},
+    {t:"Data tanpa konteks hanyalah angka.", a:"Kata Bijak", c:"Problem Solving"},
+    {t:"Cari pola, bukan hanya insiden.", a:"Kata Bijak", c:"Problem Solving"},
+    {t:"Keputusan baik lahir dari pilihan yang dipetakan, bukan ditebak.", a:"Bulletproof Problem Solving", c:"Problem Solving"},
+    {t:"Pohon keputusan yang jelas membuat pilihan sulit jadi ringan.", a:"Kata Bijak", c:"Problem Solving"},
+    {t:"Sebelum bertindak, bayangkan tiga skenario yang mungkin terjadi.", a:"Kata Bijak", c:"Problem Solving"},
+    {t:"Bias membuat kita yakin sebelum kita benar.", a:"Daniel Kahneman", c:"Problem Solving"},
+    {t:"Waspadai jawaban pertama yang terasa terlalu mudah.", a:"Thinking, Fast and Slow", c:"Problem Solving"},
+    {t:"Logika membawamu dari A ke B, imajinasi membawamu ke mana saja.", a:"Albert Einstein", c:"Problem Solving"},
+    {t:"Berhentilah mencari solusi sempurna, carilah solusi yang cukup baik.", a:"Herbert Simon", c:"Problem Solving"},
+    {t:"Rencanakan untuk berubah, bukan untuk sempurna sejak awal.", a:"Kata Bijak", c:"Problem Solving"},
+    {t:"Diagnosis yang keliru membuat obat yang tepat jadi sia-sia.", a:"Kata Bijak", c:"Problem Solving"},
+    {t:"Fakta itu keras kepala, tapi statistik lebih lentur.", a:"Mark Twain", c:"Problem Solving"},
+    {t:"Berpikir jernih dimulai dari menulis masalah dengan jelas.", a:"Kata Bijak", c:"Problem Solving"},
+
+    // ===== Motivasi (50) =====
+    {t:"Satu-satunya cara melakukan pekerjaan hebat adalah mencintai apa yang kau kerjakan.", a:"Steve Jobs", c:"Motivasi"},
+    {t:"Kegagalan adalah kesempatan untuk memulai lagi dengan lebih cerdas.", a:"Henry Ford", c:"Motivasi"},
+    {t:"Jangan menunggu kesempatan, ciptakanlah.", a:"George Bernard Shaw", c:"Motivasi"},
+    {t:"Aku tidak gagal, aku menemukan sepuluh ribu cara yang tidak berhasil.", a:"Thomas Edison", c:"Motivasi"},
+    {t:"Kesuksesan adalah berjalan dari kegagalan ke kegagalan tanpa kehilangan semangat.", a:"Winston Churchill", c:"Motivasi"},
+    {t:"Mulailah dari mana kau berada, gunakan apa yang kau punya.", a:"Arthur Ashe", c:"Motivasi"},
+    {t:"Perjalanan seribu mil dimulai dari satu langkah.", a:"Lao Tzu", c:"Motivasi"},
+    {t:"Yang tidak membunuhku membuatku lebih kuat.", a:"Friedrich Nietzsche", c:"Motivasi"},
+    {t:"Kita adalah apa yang berulang kali kita lakukan.", a:"Aristoteles", c:"Motivasi"},
+    {t:"Disiplin adalah jembatan antara tujuan dan pencapaian.", a:"Jim Rohn", c:"Motivasi"},
+    {t:"Waktu terbaik menanam pohon adalah dua puluh tahun lalu, kedua terbaik hari ini.", a:"Pepatah Tiongkok", c:"Motivasi"},
+    {t:"Fokus dan kesederhanaan selalu mengalahkan kerumitan.", a:"Steve Jobs", c:"Motivasi"},
+    {t:"Konsistensi kecil setiap hari mengalahkan usaha besar sesekali.", a:"Kata Bijak", c:"Motivasi"},
+    {t:"Keberanian bukan tanpa rasa takut, tapi bertindak meski takut.", a:"Kata Bijak", c:"Motivasi"},
+    {t:"Jangan bandingkan babak satumu dengan babak sepuluh orang lain.", a:"Kata Bijak", c:"Motivasi"},
+    {t:"Kerjakan hal kecil dengan cinta besar.", a:"Bunda Teresa", c:"Motivasi"},
+    {t:"Masa depan milik mereka yang percaya pada keindahan mimpi mereka.", a:"Eleanor Roosevelt", c:"Motivasi"},
+    {t:"Jatuh tujuh kali, bangkit delapan kali.", a:"Pepatah Jepang", c:"Motivasi"},
+    {t:"Bukan gunung yang kita taklukkan, tapi diri kita sendiri.", a:"Edmund Hillary", c:"Motivasi"},
+    {t:"Kualitas bukan tindakan, melainkan kebiasaan.", a:"Aristoteles", c:"Motivasi"},
+    {t:"Lakukan apa yang bisa kau lakukan, dengan apa yang kau punya, di mana kau berada.", a:"Theodore Roosevelt", c:"Motivasi"},
+    {t:"Rintangan adalah hal menakutkan yang kau lihat ketika mengalihkan pandangan dari tujuan.", a:"Henry Ford", c:"Motivasi"},
+    {t:"Percayalah kau bisa, maka kau sudah setengah jalan ke sana.", a:"Theodore Roosevelt", c:"Motivasi"},
+    {t:"Tidak apa merayakan kesuksesan, tapi lebih penting belajar dari kegagalan.", a:"Bill Gates", c:"Motivasi"},
+    {t:"Cara terbaik memprediksi masa depan adalah menciptakannya.", a:"Peter Drucker", c:"Motivasi"},
+    {t:"Jangan takut melangkah pelan, takutlah hanya berdiri diam.", a:"Pepatah Tiongkok", c:"Motivasi"},
+    {t:"Motivasi membuatmu memulai, kebiasaan membuatmu tetap berjalan.", a:"Jim Rohn", c:"Motivasi"},
+    {t:"Kau tidak harus hebat untuk memulai, tapi harus memulai untuk jadi hebat.", a:"Zig Ziglar", c:"Motivasi"},
+    {t:"Setiap ahli dulunya adalah pemula.", a:"Kata Bijak", c:"Motivasi"},
+    {t:"Kesabaran itu pahit, tapi buahnya manis.", a:"Aristoteles", c:"Motivasi"},
+    {t:"Energi dan kegigihan menaklukkan segala hal.", a:"Benjamin Franklin", c:"Motivasi"},
+    {t:"Apa yang kau lakukan hari ini bisa memperbaiki semua hari esokmu.", a:"Ralph Marston", c:"Motivasi"},
+    {t:"Batasmu hanyalah yang kau tetapkan sendiri di kepalamu.", a:"Kata Bijak", c:"Motivasi"},
+    {t:"Semangat yang tulus memindahkan gunung yang tampak diam.", a:"Kata Bijak", c:"Motivasi"},
+    {t:"Orang yang tidak pernah gagal adalah orang yang tidak pernah mencoba.", a:"Kata Bijak", c:"Motivasi"},
+    {t:"Bermimpilah besar, mulailah kecil, tapi yang terpenting mulailah.", a:"Simon Sinek", c:"Motivasi"},
+    {t:"Sukses adalah jumlah dari usaha kecil, diulang hari demi hari.", a:"Robert Collier", c:"Motivasi"},
+    {t:"Jangan hitung hari, buat hari itu berarti.", a:"Muhammad Ali", c:"Motivasi"},
+    {t:"Optimisme adalah keyakinan yang membawa pada pencapaian.", a:"Helen Keller", c:"Motivasi"},
+    {t:"Keberhasilan adalah guru yang buruk, ia membuat orang pintar merasa tak bisa gagal.", a:"Bill Gates", c:"Motivasi"},
+    {t:"Tak ada angin yang menguntungkan bagi pelaut yang tak tahu tujuannya.", a:"Seneca", c:"Motivasi"},
+    {t:"Belajarlah seolah kau hidup selamanya, hiduplah seolah kau mati esok.", a:"Mahatma Gandhi", c:"Motivasi"},
+    {t:"Jadilah perubahan yang ingin kau lihat di dunia.", a:"Mahatma Gandhi", c:"Motivasi"},
+    {t:"Semua kemenangan besar dimulai dari keputusan untuk mencoba.", a:"Kata Bijak", c:"Motivasi"},
+    {t:"Ketekunan bisa mengubah kegagalan menjadi pencapaian luar biasa.", a:"Kata Bijak", c:"Motivasi"},
+    {t:"Kerja keras mengalahkan bakat ketika bakat tidak bekerja keras.", a:"Kata Bijak", c:"Motivasi"},
+    {t:"Fokuslah pada progres, bukan kesempurnaan.", a:"Kata Bijak", c:"Motivasi"},
+    {t:"Yang membedakan pemenang bukan tanpa kegagalan, tapi tak pernah berhenti mencoba.", a:"Kata Bijak", c:"Motivasi"},
+    {t:"Setiap hari adalah kesempatan baru untuk menjadi lebih baik.", a:"Kata Bijak", c:"Motivasi"},
+    {t:"Langkah kecil yang konsisten membawamu lebih jauh dari lompatan yang jarang.", a:"Kata Bijak", c:"Motivasi"},
+
+    // ===== Filosofi (50) =====
+    {t:"Hidup yang tidak diuji tidak layak dijalani.", a:"Socrates", c:"Filosofi"},
+    {t:"Aku berpikir, maka aku ada.", a:"René Descartes", c:"Filosofi"},
+    {t:"Kenalilah dirimu sendiri.", a:"Pepatah Delphi", c:"Filosofi"},
+    {t:"Satu-satunya kebijaksanaan sejati adalah mengetahui bahwa kau tidak tahu apa-apa.", a:"Socrates", c:"Filosofi"},
+    {t:"Pengetahuan adalah kekuatan.", a:"Francis Bacon", c:"Filosofi"},
+    {t:"Manusia dihukum bebas, sebab sekali dilempar ke dunia ia bertanggung jawab atas segalanya.", a:"Jean-Paul Sartre", c:"Filosofi"},
+    {t:"Bukan peristiwa yang mengganggu manusia, tapi pendapatnya tentang peristiwa itu.", a:"Epictetus", c:"Filosofi"},
+    {t:"Kau punya kendali atas pikiranmu, bukan peristiwa di luar dirimu.", a:"Marcus Aurelius", c:"Filosofi"},
+    {t:"Yang menghalangi jalan menjadi jalan itu sendiri.", a:"Marcus Aurelius", c:"Filosofi"},
+    {t:"Manusia bukan diganggu oleh sesuatu, tapi oleh pandangannya sendiri.", a:"Epictetus", c:"Filosofi"},
+    {t:"Kita menderita lebih banyak dalam imajinasi daripada kenyataan.", a:"Seneca", c:"Filosofi"},
+    {t:"Bukan karena hal-hal sulit kita tak berani, tapi karena kita tak berani hal-hal jadi sulit.", a:"Seneca", c:"Filosofi"},
+    {t:"Kebahagiaan bergantung pada diri kita sendiri.", a:"Aristoteles", c:"Filosofi"},
+    {t:"Manusia adalah makhluk yang mengukur segala sesuatu.", a:"Protagoras", c:"Filosofi"},
+    {t:"Tak seorang pun menginjak sungai yang sama dua kali.", a:"Heraclitus", c:"Filosofi"},
+    {t:"Perubahan adalah satu-satunya hal yang tetap.", a:"Heraclitus", c:"Filosofi"},
+    {t:"Keberanian adalah yang pertama dari kualitas manusia karena menjamin yang lain.", a:"Aristoteles", c:"Filosofi"},
+    {t:"Filsafat dimulai dengan rasa kagum.", a:"Aristoteles", c:"Filosofi"},
+    {t:"Yang tak tergoyahkan oleh apapun adalah yang paling bebas.", a:"Kata Bijak Stoa", c:"Filosofi"},
+    {t:"Sesuatu yang baik tidak pernah datang dengan mudah.", a:"Kata Bijak", c:"Filosofi"},
+    {t:"Manusia mencari makna, bukan sekadar kenikmatan.", a:"Viktor Frankl", c:"Filosofi"},
+    {t:"Di antara stimulus dan respons ada ruang, di ruang itu ada kebebasan kita.", a:"Viktor Frankl", c:"Filosofi"},
+    {t:"Yang tidak membuatmu berpikir tidak akan membuatmu berkembang.", a:"Kata Bijak", c:"Filosofi"},
+    {t:"Hidup harus dipahami mundur, tetapi harus dijalani maju.", a:"Søren Kierkegaard", c:"Filosofi"},
+    {t:"Berani menjadi diri sendiri di dunia yang terus mencoba mengubahmu.", a:"Ralph Waldo Emerson", c:"Filosofi"},
+    {t:"Bukan gunung yang kita daki, tapi diri kita yang kita taklukkan.", a:"Kata Bijak", c:"Filosofi"},
+    {t:"Kebijaksanaan dimulai dari keheranan.", a:"Socrates", c:"Filosofi"},
+    {t:"Tuhan menciptakan manusia bebas, bahkan bebas untuk menyangkal-Nya.", a:"Nikos Kazantzakis", c:"Filosofi"},
+    {t:"Segala sesuatu yang ada mengandung benih kehancurannya sendiri.", a:"Kata Bijak Stoa", c:"Filosofi"},
+    {t:"Manusia adalah ukuran dari segala sesuatu.", a:"Protagoras", c:"Filosofi"},
+    {t:"Jiwa yang tenang menemukan kejelasan yang tidak ditemukan jiwa yang gelisah.", a:"Kata Bijak", c:"Filosofi"},
+    {t:"Kebebasan sejati adalah menguasai keinginan, bukan memuaskannya.", a:"Epictetus", c:"Filosofi"},
+    {t:"Nasib menuntun mereka yang mau, dan menyeret mereka yang menolak.", a:"Seneca", c:"Filosofi"},
+    {t:"Yang bijak mengubah pikirannya, yang bodoh tidak pernah.", a:"Kata Bijak", c:"Filosofi"},
+    {t:"Kematian bukan lawan hidup, tapi bagian darinya.", a:"Haruki Murakami", c:"Filosofi"},
+    {t:"Tak ada yang tetap kecuali perubahan itu sendiri.", a:"Heraclitus", c:"Filosofi"},
+    {t:"Cinta pada kebijaksanaan adalah awal dari kebijaksanaan itu sendiri.", a:"Kata Bijak", c:"Filosofi"},
+    {t:"Yang tidak bisa diubah, terimalah dengan tenang.", a:"Filosofi Stoa", c:"Filosofi"},
+    {t:"Kesulitan menunjukkan manusia sebagaimana ia sesungguhnya.", a:"Epictetus", c:"Filosofi"},
+    {t:"Berpikir jernih adalah bentuk keberanian tersendiri.", a:"Kata Bijak", c:"Filosofi"},
+    {t:"Jangan mencari kebenaran di luar, carilah di dalam dirimu.", a:"Rumi", c:"Filosofi"},
+    {t:"Luka adalah tempat cahaya masuk ke dalam dirimu.", a:"Rumi", c:"Filosofi"},
+    {t:"Kemarin sudah berlalu, esok belum tiba, kita hanya punya hari ini.", a:"Rumi", c:"Filosofi"},
+    {t:"Kebenaran itu satu, orang bijak menyebutnya dengan banyak nama.", a:"Rigveda", c:"Filosofi"},
+    {t:"Yang paling kuat adalah yang menguasai dirinya sendiri.", a:"Lao Tzu", c:"Filosofi"},
+    {t:"Alam tidak terburu-buru, namun segala sesuatu terselesaikan.", a:"Lao Tzu", c:"Filosofi"},
+    {t:"Diamlah, dan kau akan menemukan jawabannya sendiri.", a:"Kata Bijak", c:"Filosofi"},
+    {t:"Kekosongan dari sebuah cangkir yang membuatnya berguna.", a:"Lao Tzu", c:"Filosofi"},
+    {t:"Menang atas dirimu sendiri adalah kemenangan terbesar.", a:"Plato", c:"Filosofi"},
+    {t:"Awal adalah bagian terpenting dari suatu pekerjaan.", a:"Plato", c:"Filosofi"},
+
+    // ===== Zen & Kebijaksanaan Jepang (50) =====
+    {t:"Jatuh tujuh kali, bangkit delapan kali.", a:"七転び八起き · Pepatah Jepang", c:"Zen"},
+    {t:"Satu pertemuan, satu kesempatan yang tak terulang.", a:"一期一会 · Pepatah Jepang", c:"Zen"},
+    {t:"Perbaikan berkelanjutan, sedikit demi sedikit setiap hari.", a:"改善 Kaizen", c:"Zen"},
+    {t:"Keindahan ada pada ketidaksempurnaan dan hal yang sementara.", a:"侘寂 Wabi-Sabi", c:"Zen"},
+    {t:"Fokus pada satu hal, lakukan dengan sepenuh hati.", a:"一期一会 · Pepatah Jepang", c:"Zen"},
+    {t:"Kesabaran adalah kekuatan; waktu dan kesabaran mengubah daun murbei jadi sutra.", a:"Pepatah Jepang", c:"Zen"},
+    {t:"Yang bengkok jangan dipaksa lurus, biarkan tumbuh sesuai bentuknya.", a:"Pepatah Jepang", c:"Zen"},
+    {t:"Pisau yang tajam datang dari asahan yang sabar.", a:"Miyamoto Musashi", c:"Zen"},
+    {t:"Kenalilah seribu hal lewat satu hal yang kau kuasai penuh.", a:"Miyamoto Musashi", c:"Zen"},
+    {t:"Jangan punya keinginan yang berpihak.", a:"Miyamoto Musashi", c:"Zen"},
+    {t:"Hari kemenangan adalah hari saat kau melampaui dirimu kemarin.", a:"Miyamoto Musashi", c:"Zen"},
+    {t:"Dalam strategi, hal yang penting adalah melihat hal jauh sebagai dekat, dan dekat sebagai jauh.", a:"Miyamoto Musashi", c:"Zen"},
+    {t:"Pikiran yang tenang seperti air yang jernih memantulkan kebenaran.", a:"Kata Bijak Zen", c:"Zen"},
+    {t:"Sebelum pencerahan, tebang kayu, ambil air. Sesudah pencerahan, tebang kayu, ambil air.", a:"Pepatah Zen", c:"Zen"},
+    {t:"Angin yang keras mematahkan pohon yang kaku, bukan yang lentur.", a:"Pepatah Jepang", c:"Zen"},
+    {t:"Semut yang terus bergerak lebih jauh dari gajah yang berhenti.", a:"Pepatah Jepang", c:"Zen"},
+    {t:"Kalau kau tidak maju, kau mundur.", a:"Pepatah Jepang", c:"Zen"},
+    {t:"Bunga sakura indah karena ia gugur.", a:"Kata Bijak Jepang", c:"Zen"},
+    {t:"Ruang kosong dalam lukisan sama pentingnya dengan goresan tintanya.", a:"Filosofi Ma (間)", c:"Zen"},
+    {t:"Diam adalah bahasa Zen yang paling jujur.", a:"Kata Bijak Zen", c:"Zen"},
+    {t:"Pedang terbaik adalah yang tak pernah perlu dihunus.", a:"Bushido", c:"Zen"},
+    {t:"Kehormatan tanpa tindakan hanyalah kata kosong.", a:"Bushido", c:"Zen"},
+    {t:"Kesetiaan pada tujuan mengalahkan kesetiaan pada kenyamanan.", a:"Bushido", c:"Zen"},
+    {t:"Air mengalir mengikuti bentuk wadahnya, namun tetap mencapai laut.", a:"Kata Bijak", c:"Zen"},
+    {t:"Retakan yang ditambal emas menjadi lebih indah dari yang utuh.", a:"金継ぎ Kintsugi", c:"Zen"},
+    {t:"Luka masa lalu, bila dirawat, menjadi bagian dari keindahanmu.", a:"Filosofi Kintsugi", c:"Zen"},
+    {t:"Tak perlu menyembunyikan retakan, tunjukkan sebagai bagian dari kisahmu.", a:"Filosofi Kintsugi", c:"Zen"},
+    {t:"Kesempurnaan bukan tujuan, keutuhan yang jujur adalah tujuan.", a:"Filosofi Wabi-Sabi", c:"Zen"},
+    {t:"Yang sederhana dan bersahaja menyimpan keindahan yang dalam.", a:"Filosofi Wabi-Sabi", c:"Zen"},
+    {t:"Pikiran pemula memiliki banyak kemungkinan, pikiran ahli hanya sedikit.", a:"Shunryu Suzuki", c:"Zen"},
+    {t:"Dalam pikiran pemula ada banyak jawaban, dalam pikiran ahli hanya sedikit.", a:"Shunryu Suzuki", c:"Zen"},
+    {t:"Jalan seribu li dimulai di bawah kaki.", a:"Pepatah Asia Timur", c:"Zen"},
+    {t:"Batu yang terus ditetesi air akhirnya berlubang.", a:"Pepatah Jepang", c:"Zen"},
+    {t:"Kejatuhan bukan kegagalan, berhenti mencoba itulah kegagalan.", a:"Pepatah Jepang", c:"Zen"},
+    {t:"Bambu membungkuk pada badai, tapi tak pernah patah.", a:"Pepatah Asia", c:"Zen"},
+    {t:"Kekuatan sejati ada pada kelenturan, bukan kekakuan.", a:"Filosofi Aikido", c:"Zen"},
+    {t:"Selaraskan dirimu dengan lawan, jangan melawan arus dengan sia-sia.", a:"Filosofi Aikido", c:"Zen"},
+    {t:"Guru terbaik bagi dirimu adalah dirimu sendiri, hari demi hari.", a:"Kata Bijak", c:"Zen"},
+    {t:"Ketenangan bukan absennya badai, tapi damai di tengahnya.", a:"Kata Bijak Zen", c:"Zen"},
+    {t:"Menatap ke dalam lebih penting dari menatap ke luar.", a:"Kata Bijak Zen", c:"Zen"},
+    {t:"Cangkir yang penuh tak bisa diisi lagi, kosongkan dulu pikiranmu.", a:"Kata Bijak Zen", c:"Zen"},
+    {t:"Teh yang diseduh perlahan lebih terasa dibanding yang diseduh terburu-buru.", a:"Upacara Teh Jepang", c:"Zen"},
+    {t:"Satu gerakan, satu napas, satu kehadiran penuh.", a:"Filosofi Zen", c:"Zen"},
+    {t:"Kesungguhan kecil setiap hari melampaui semangat besar sesekali.", a:"Kata Bijak Jepang", c:"Zen"},
+    {t:"Yang tak terlihat sering menopang yang terlihat.", a:"Filosofi Ma (間)", c:"Zen"},
+    {t:"Kerja yang dilakukan dengan hati penuh tak pernah sia-sia.", a:"Kata Bijak Jepang", c:"Zen"},
+    {t:"Kehormatan terbesar adalah menepati janji pada diri sendiri.", a:"Bushido", c:"Zen"},
+    {t:"Belajar dari kekalahan lebih berharga dari merayakan kemenangan.", a:"Kata Bijak Jepang", c:"Zen"},
+    {t:"Ketekunan yang tenang mengalahkan semangat yang meledak-ledak.", a:"Kata Bijak Jepang", c:"Zen"},
+    {t:"Hormati proses, hasil akan mengikuti dengan sendirinya.", a:"Kata Bijak Jepang", c:"Zen"},
+
+    // ===== Populer & Terbaik (50) =====
+    {t:"Hidup adalah apa yang terjadi ketika kau sibuk membuat rencana lain.", a:"John Lennon", c:"Populer"},
+    {t:"Jadilah dirimu sendiri, semua orang lain sudah ada yang menjadi.", a:"Oscar Wilde", c:"Populer"},
+    {t:"Dua hal tak terbatas: alam semesta dan kebodohan manusia, aku tak yakin soal yang pertama.", a:"Albert Einstein", c:"Populer"},
+    {t:"Imajinasi lebih penting dari pengetahuan.", a:"Albert Einstein", c:"Populer"},
+    {t:"Kegilaan adalah melakukan hal yang sama berulang dan mengharap hasil berbeda.", a:"Sering dikaitkan dengan Albert Einstein", c:"Populer"},
+    {t:"Hiduplah seolah kau mati besok, belajarlah seolah kau hidup selamanya.", a:"Mahatma Gandhi", c:"Populer"},
+    {t:"Satu-satunya hal yang harus kita takuti adalah rasa takut itu sendiri.", a:"Franklin D. Roosevelt", c:"Populer"},
+    {t:"Aku punya mimpi.", a:"Martin Luther King Jr.", c:"Populer"},
+    {t:"Kebebasan sejati adalah kemampuan memilih rantai yang mengikatmu.", a:"Jean-Paul Sartre", c:"Populer"},
+    {t:"Waktu adalah ilusi, tapi ilusi yang sangat gigih.", a:"Albert Einstein", c:"Populer"},
+    {t:"Cara terbaik keluar selalu melalui.", a:"Robert Frost", c:"Populer"},
+    {t:"Kita bukan manusia yang mengalami pengalaman spiritual, kita makhluk spiritual yang mengalami hidup manusia.", a:"Pierre Teilhard de Chardin", c:"Populer"},
+    {t:"Yang tak dapat diukur, cobalah tetap diperhitungkan.", a:"Albert Einstein", c:"Populer"},
+    {t:"Sederhana itu kecanggihan tertinggi.", a:"Leonardo da Vinci", c:"Populer"},
+    {t:"Belajar tak pernah melelahkan pikiran.", a:"Leonardo da Vinci", c:"Populer"},
+    {t:"Kesederhanaan adalah kecanggihan puncak.", a:"Leonardo da Vinci", c:"Populer"},
+    {t:"Rasa ingin tahu adalah alasan kita ada.", a:"Walt Disney", c:"Populer"},
+    {t:"Semua mimpi kita bisa terwujud jika kita punya keberanian mengejarnya.", a:"Walt Disney", c:"Populer"},
+    {t:"Cara memulai adalah berhenti bicara dan mulai bertindak.", a:"Walt Disney", c:"Populer"},
+    {t:"Inovasi membedakan pemimpin dan pengikut.", a:"Steve Jobs", c:"Populer"},
+    {t:"Waktumu terbatas, jangan habiskan untuk hidup orang lain.", a:"Steve Jobs", c:"Populer"},
+    {t:"Tetaplah lapar, tetaplah bodoh.", a:"Steve Jobs", c:"Populer"},
+    {t:"Bertahan tetap semangat sepanjang jalan, bukan hanya di garis akhir.", a:"Kata Bijak", c:"Populer"},
+    {t:"Aku tak pernah kalah, aku hanya belajar.", a:"Nelson Mandela", c:"Populer"},
+    {t:"Rasanya selalu tak mungkin, sampai selesai dilakukan.", a:"Nelson Mandela", c:"Populer"},
+    {t:"Pendidikan adalah senjata paling ampuh untuk mengubah dunia.", a:"Nelson Mandela", c:"Populer"},
+    {t:"Kebijaksanaan mulai dengan kekaguman.", a:"Socrates", c:"Populer"},
+    {t:"Sebaik-baik manusia adalah yang paling bermanfaat bagi manusia lain.", a:"Pepatah", c:"Populer"},
+    {t:"Karakter adalah apa yang kau lakukan saat tak ada yang melihat.", a:"Kata Bijak", c:"Populer"},
+    {t:"Yang penting bukan seberapa keras kau jatuh, tapi seberapa cepat kau bangkit.", a:"Kata Bijak", c:"Populer"},
+    {t:"Semua orang jenius, tapi jika kau menilai ikan dari kemampuannya memanjat pohon ia akan merasa bodoh.", a:"Sering dikaitkan dengan Albert Einstein", c:"Populer"},
+    {t:"Aku tidak takut badai, sebab aku belajar mengemudikan kapalku sendiri.", a:"Louisa May Alcott", c:"Populer"},
+    {t:"Kebahagiaan bukan sesuatu yang sudah jadi, ia datang dari tindakanmu sendiri.", a:"Dalai Lama", c:"Populer"},
+    {t:"Bagikan kebaikanmu, kau tak pernah tahu seberapa besar dampaknya.", a:"Kata Bijak", c:"Populer"},
+    {t:"Ubah pikiranmu dan kau ubah duniamu.", a:"Norman Vincent Peale", c:"Populer"},
+    {t:"Cara memulai adalah dengan berhenti berbicara dan mulai melakukan.", a:"Walt Disney", c:"Populer"},
+    {t:"Hal yang kau takuti paling banyak biasanya paling perlu kau hadapi.", a:"Kata Bijak", c:"Populer"},
+    {t:"Setiap pencapaian besar dulunya dianggap mustahil.", a:"Kata Bijak", c:"Populer"},
+    {t:"Perbuatan baik kecil hari ini bisa jadi cerita besar esok hari.", a:"Kata Bijak", c:"Populer"},
+    {t:"Keindahan hidup terletak pada perjalanan, bukan hanya tujuan.", a:"Kata Bijak", c:"Populer"},
+    {t:"Berhentilah menghitung hari, mulailah membuat hari itu berarti.", a:"Muhammad Ali", c:"Populer"},
+    {t:"Terbanglah setinggi mungkin, sebab langit tak punya batas.", a:"Usain Bolt", c:"Populer"},
+    {t:"Kau tak pernah terlalu tua untuk menetapkan tujuan baru.", a:"C.S. Lewis", c:"Populer"},
+    {t:"Rasa syukur mengubah yang kita punya jadi cukup.", a:"Kata Bijak", c:"Populer"},
+    {t:"Waktu yang kau nikmati bukanlah waktu yang terbuang.", a:"John Lennon", c:"Populer"},
+    {t:"Kesalahan adalah bukti bahwa kau sedang mencoba.", a:"Kata Bijak", c:"Populer"},
+    {t:"Kau tidak bisa kembali dan mengubah awal, tapi bisa mulai dari sekarang dan ubah akhirnya.", a:"C.S. Lewis", c:"Populer"},
+    {t:"Percaya kau bisa dan kau sudah setengah jalan sampai di sana.", a:"Theodore Roosevelt", c:"Populer"},
+    {t:"Kebaikan adalah bahasa yang bisa didengar tuli dan dilihat buta.", a:"Mark Twain", c:"Populer"},
+    {t:"Berikan yang terbaik hari ini, sebab hari ini tak akan kembali.", a:"Kata Bijak", c:"Populer"}
+  ];
+  let quoteOrder = [];
+  let quotePos = 0;
+
+  function shuffleArray(arr){
+    const a = arr.slice();
+    for(let i=a.length-1;i>0;i--){
+      const j = Math.floor(Math.random()*(i+1));
+      [a[i],a[j]] = [a[j],a[i]];
+    }
+    return a;
+  }
+
+  function renderQuoteAt(pos){
+    const idx = quoteOrder[pos];
+    const q = QUOTES[idx];
+    document.getElementById('quoteCat').textContent = q.c;
+    document.getElementById('quoteText').textContent = '“' + q.t + '”';
+    document.getElementById('quoteAuthor').textContent = '— ' + q.a;
+    document.getElementById('quoteCounter').textContent = (pos+1) + ' / ' + QUOTES.length;
+  }
+
+  function transitionToQuote(pos){
+    const wrap = document.getElementById('quoteFadeWrap');
+    wrap.classList.add('fading');
+    setTimeout(()=>{
+      renderQuoteAt(pos);
+      wrap.classList.remove('fading');
+    }, 260);
+  }
+
+  function initQuotes(){
+    quoteOrder = shuffleArray(QUOTES.map((_,i)=>i));
+    quotePos = 0;
+    renderQuoteAt(quotePos);
+  }
+
+  document.getElementById('quoteNext').addEventListener('click', ()=>{
+    quotePos = (quotePos + 1) % quoteOrder.length;
+    transitionToQuote(quotePos);
+  });
+  document.getElementById('quotePrev').addEventListener('click', ()=>{
+    quotePos = (quotePos - 1 + quoteOrder.length) % quoteOrder.length;
+    transitionToQuote(quotePos);
+  });
+
+  const LS_DATA = "mondaicho_problems_v1";
+  const LS_SETTINGS = "mondaicho_settings_v1";
+
+  let state = { problems: [], settings: { theme:"light", pageSize:15 } };
+  let editingId = null;
+  let pendingConfirm = null;
+  let currentPage = 1;
+  function getPageSize(){ return state.settings.pageSize || 15; }
+
+  /* ---------- storage ---------- */
+  function load(){
+    try{
+      const d = localStorage.getItem(LS_DATA);
+      const s = localStorage.getItem(LS_SETTINGS);
+      state.problems = d ? JSON.parse(d) : [];
+      state.settings = s ? JSON.parse(s) : { theme:"light", pageSize:15 };
+      if(!state.settings.pageSize) state.settings.pageSize = 15;
+    }catch(e){
+      state = { problems: [], settings:{theme:"light", pageSize:15} };
+    }
+    document.getElementById('pageSizeSelect').value = String(getPageSize());
+  }
+  function saveData(){
+    try{ localStorage.setItem(LS_DATA, JSON.stringify(state.problems)); }catch(e){}
+  }
+  function saveSettings(){
+    try{ localStorage.setItem(LS_SETTINGS, JSON.stringify(state.settings)); }catch(e){}
+  }
+
+  /* ---------- helpers ---------- */
+  function uid(){ return 'p_' + Date.now().toString(36) + Math.random().toString(36).slice(2,8); }
+  function esc(str){
+    return (str||"").replace(/[&<>"']/g, m => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[m]));
+  }
+  function fmtDate(ts){
+    const d = new Date(ts);
+    return d.toLocaleDateString('id-ID',{day:'2-digit',month:'short',year:'numeric'}) + ' · ' + d.toLocaleTimeString('id-ID',{hour:'2-digit',minute:'2-digit'});
+  }
+
+  function toast(msg, type){
+    const host = document.getElementById('toastHost');
+    const el = document.createElement('div');
+    el.className = 'toast' + (type ? ' '+type : '');
+    el.innerHTML = '<span class="dot"></span><span>'+esc(msg)+'</span>';
+    host.appendChild(el);
+    setTimeout(()=>{ el.remove(); }, 3050);
+  }
+
+  function sakuraBurst(){
+    const petals = ['🌸','❀','✿'];
+    for(let i=0;i<14;i++){
+      const p = document.createElement('div');
+      p.className = 'petal';
+      p.textContent = petals[Math.floor(Math.random()*petals.length)];
+      p.style.left = Math.random()*100 + 'vw';
+      p.style.fontSize = (12+Math.random()*10)+'px';
+      p.style.setProperty('--drift', (Math.random()*160-80)+'px');
+      p.style.animationDuration = (2.2+Math.random()*1.4)+'s';
+      document.body.appendChild(p);
+      setTimeout(()=>p.remove(), 4000);
+    }
+  }
+
+  /* ---------- theme ---------- */
+  function applyTheme(){
+    document.body.setAttribute('data-theme', state.settings.theme);
+    document.getElementById('themeToggle').textContent = state.settings.theme === 'dark' ? '☀' : '☾';
+  }
+  document.getElementById('themeToggle').addEventListener('click', ()=>{
+    state.settings.theme = state.settings.theme === 'dark' ? 'light' : 'dark';
+    applyTheme(); saveSettings();
+  });
+
+  /* ---------- rendering ---------- */
+  function allTags(){
+    const set = new Set();
+    state.problems.forEach(p => (p.tags||[]).forEach(t => set.add(t)));
+    return Array.from(set).sort();
+  }
+
+  function refreshTagFilter(){
+    const sel = document.getElementById('tagFilter');
+    const current = sel.value;
+    sel.innerHTML = '<option value="">Semua tag</option>' +
+      allTags().map(t => `<option value="${esc(t)}">${esc(t)}</option>`).join('');
+    if(allTags().includes(current)) sel.value = current;
+  }
+
+  function getFiltered(){
+    const q = document.getElementById('searchInput').value.trim().toLowerCase();
+    const tag = document.getElementById('tagFilter').value;
+    const status = document.getElementById('statusFilter').value;
+    const sort = document.getElementById('sortSelect').value;
+
+    let list = state.problems.filter(p => {
+      if(status === 'open' && p.solved) return false;
+      if(status === 'solved' && !p.solved) return false;
+      if(tag && !(p.tags||[]).includes(tag)) return false;
+      if(q){
+        const hay = [p.title,p.what,p.who,p.when,p.where,p.why,p.how,(p.tags||[]).join(' ')].join(' ').toLowerCase();
+        if(!hay.includes(q)) return false;
+      }
+      return true;
+    });
+
+    list.sort((a,b)=>{
+      switch(sort){
+        case 'oldest': return a.createdAt - b.createdAt;
+        case 'az': return a.title.localeCompare(b.title,'id');
+        case 'diffHigh': return b.difficulty - a.difficulty;
+        case 'diffLow': return a.difficulty - b.difficulty;
+        default: return b.createdAt - a.createdAt; // newest
+      }
+    });
+
+    list.sort((a,b) => (b.pinned?1:0) - (a.pinned?1:0));
+    return list;
+  }
+
+  function starHtml(n){
+    let s = '';
+    for(let i=1;i<=5;i++) s += (i<=n ? '★' : '☆');
+    return s;
+  }
+
+  function detailRow(label, jp, val){
+    return `<div class="detail-item"><b>${label}</b><span class="jp">${jp}</span><br>${val ? esc(val) : '<span class="detail-empty">— belum diisi —</span>'}</div>`;
+  }
+
+  function goToPage(page){
+    currentPage = page;
+    render();
+    window.scrollTo({top:0, behavior:'smooth'});
+  }
+
+  /**
+   * Render pagination bar: showing-range badge, first/prev/…/numbered pages/…/next/last,
+   * and keep it in sync with the page-size selector + jump-to-page input.
+   */
+  function renderPagination(totalItems){
+    const bar = document.getElementById('pagiBar');
+    const host = document.getElementById('pagination');
+    const pageSize = getPageSize();
+    const totalPages = Math.max(1, Math.ceil(totalItems / pageSize));
+    host.innerHTML = '';
+
+    if(totalItems === 0){
+      bar.style.display = 'none';
+      return;
+    }
+    bar.style.display = 'flex';
+
+    if(currentPage > totalPages) currentPage = totalPages;
+    if(currentPage < 1) currentPage = 1;
+
+    // ----- range badge: "Menampilkan 16–30 dari 42" -----
+    const start = totalItems === 0 ? 0 : (currentPage - 1) * pageSize + 1;
+    const end = Math.min(currentPage * pageSize, totalItems);
+    document.getElementById('pagiRange').innerHTML =
+      `Menampilkan <b>${start}</b>–<b>${end}</b> dari <b>${totalItems}</b> masalah`;
+
+    // ----- nav buttons -----
+    function makeBtn(label, page, opts){
+      opts = opts || {};
+      const b = document.createElement('button');
+      b.className = 'page-btn' + (opts.active ? ' active' : '') + (opts.edge ? ' edge' : '');
+      b.textContent = label;
+      b.disabled = !!opts.disabled;
+      b.title = opts.title || '';
+      if(!opts.disabled && !opts.active){
+        b.addEventListener('click', ()=> goToPage(page));
+      }
+      return b;
+    }
+
+    if(totalPages > 1){
+      host.appendChild(makeBtn('«', 1, {disabled: currentPage===1, edge:true, title:'Halaman pertama'}));
+      host.appendChild(makeBtn('‹', currentPage-1, {disabled: currentPage===1, title:'Sebelumnya'}));
+
+      // Windowed range around current page, always including first & last
+      const RANGE = 1; // pages shown on each side of current
+      const pages = new Set([1, totalPages]);
+      for(let p=currentPage-RANGE; p<=currentPage+RANGE; p++) pages.add(p);
+
+      let prev = 0;
+      Array.from(pages).filter(p=>p>=1 && p<=totalPages).sort((a,b)=>a-b).forEach(p=>{
+        if(prev && p - prev > 1){
+          const dots = document.createElement('span');
+          dots.className = 'page-dots';
+          dots.textContent = '…';
+          host.appendChild(dots);
+        }
+        host.appendChild(makeBtn(String(p), p, {active: p===currentPage}));
+        prev = p;
+      });
+
+      host.appendChild(makeBtn('›', currentPage+1, {disabled: currentPage===totalPages, title:'Berikutnya'}));
+      host.appendChild(makeBtn('»', totalPages, {disabled: currentPage===totalPages, edge:true, title:'Halaman terakhir'}));
+    }
+
+    const jumpInput = document.getElementById('pageJumpInput');
+    jumpInput.max = String(totalPages);
+    jumpInput.placeholder = String(currentPage);
+  }
+
+  function handlePageJump(){
+    const input = document.getElementById('pageJumpInput');
+    const val = parseInt(input.value, 10);
+    if(!val || val < 1){ toast('Masukkan nomor halaman yang valid.', 'error'); return; }
+    const totalPages = Math.max(1, Math.ceil(getFiltered().length / getPageSize()));
+    const target = Math.min(Math.max(val, 1), totalPages);
+    input.value = '';
+    goToPage(target);
+  }
+  document.getElementById('pageJumpBtn').addEventListener('click', handlePageJump);
+  document.getElementById('pageJumpInput').addEventListener('keydown', (e)=>{
+    if(e.key === 'Enter') handlePageJump();
+  });
+  document.getElementById('pageSizeSelect').addEventListener('change', (e)=>{
+    state.settings.pageSize = parseInt(e.target.value, 10) || 15;
+    currentPage = 1;
+    saveSettings();
+    render();
+  });
+
+  function render(){
+    refreshTagFilter();
+    const grid = document.getElementById('grid');
+    const fullList = getFiltered();
+    document.getElementById('emptyState').style.display = (state.problems.length===0) ? 'block' : 'none';
+    grid.innerHTML = '';
+
+    if(state.problems.length>0 && fullList.length===0){
+      grid.innerHTML = '<div style="grid-column:1/-1; text-align:center; color:var(--ink-soft); padding:30px;">Tidak ada masalah yang cocok dengan filter/pencarian.</div>';
+      document.getElementById('pagination').innerHTML = '';
+      document.getElementById('pagiBar').style.display = 'none';
+      return;
+    }
+
+    const pageSize = getPageSize();
+    const totalPages = Math.max(1, Math.ceil(fullList.length / pageSize));
+    if(currentPage > totalPages) currentPage = totalPages;
+    if(currentPage < 1) currentPage = 1;
+    const start = (currentPage - 1) * pageSize;
+    const list = fullList.slice(start, start + pageSize);
+
+    list.forEach(p => {
+      const card = document.createElement('div');
+      card.className = 'card' + (p.pinned?' pinned':'') + (p.solved?' solved':'');
+      card.dataset.id = p.id;
+      card.innerHTML = `
+        <div class="pin-fold"></div>
+        <div class="card-top">
+          <h3 class="card-title">${esc(p.title)}</h3>
+          <span class="status-badge ${p.solved?'status-solved':'status-open'}">${p.solved?'Selesai':'Berjalan'}</span>
+        </div>
+        <div class="stars">${starHtml(p.difficulty)}</div>
+        <div class="tags-row">${(p.tags||[]).map(t=>`<span class="tag-chip">#${esc(t)}</span>`).join('')}</div>
+        <div class="card-meta">Dibuat ${fmtDate(p.createdAt)}</div>
+        <div class="detail" id="detail-${p.id}">
+          <div class="detail-inner">
+            ${detailRow('Apa','何 What', p.what)}
+            ${detailRow('Siapa','誰 Who', p.who)}
+            ${detailRow('Kapan','いつ When', p.when)}
+            ${detailRow('Dimana','どこ Where', p.where)}
+            ${detailRow('Mengapa','なぜ Why', p.why)}
+            ${detailRow('Bagaimana','どう How', p.how)}
+          </div>
+        </div>
+        <div class="card-actions">
+          <button class="btn btn-ghost btn-sm act-pin">${p.pinned?'📌 Lepas pin':'📌 Pin'}</button>
+          <button class="btn btn-ghost btn-sm act-solve">${p.solved?'↺ Buka lagi':'✓ Tandai selesai'}</button>
+          <button class="btn btn-ghost btn-sm act-edit">✎ Edit</button>
+          <button class="btn btn-danger btn-sm act-del">🗑 Hapus</button>
+        </div>
+      `;
+      card.querySelector('.card-title').addEventListener('click', ()=>{
+        document.getElementById('detail-'+p.id).classList.toggle('open');
+      });
+      card.querySelector('.act-pin').addEventListener('click', (e)=>{ e.stopPropagation(); togglePin(p.id); });
+      card.querySelector('.act-solve').addEventListener('click', (e)=>{ e.stopPropagation(); toggleSolve(p.id, card); });
+      card.querySelector('.act-edit').addEventListener('click', (e)=>{ e.stopPropagation(); openEdit(p.id); });
+      card.querySelector('.act-del').addEventListener('click', (e)=>{ e.stopPropagation(); askDelete(p.id); });
+      grid.appendChild(card);
+    });
+
+    renderPagination(fullList.length);
+  }
+
+  /* ---------- CRUD ---------- */
+  function togglePin(id){
+    const p = state.problems.find(x=>x.id===id);
+    if(!p) return;
+    p.pinned = !p.pinned;
+    saveData(); render();
+    toast(p.pinned ? 'Masalah disematkan.' : 'Pin dilepas.', 'success');
+  }
+
+  function toggleSolve(id, cardEl){
+    const p = state.problems.find(x=>x.id===id);
+    if(!p) return;
+    p.solved = !p.solved;
+    p.updatedAt = Date.now();
+    saveData();
+    if(p.solved){
+      showStamp(cardEl);
+      sakuraBurst();
+      toast('Kerja bagus! Masalah ditandai selesai. 解決', 'success');
+      setTimeout(render, 650);
+    } else {
+      toast('Status dikembalikan ke berjalan.', '');
+      render();
+    }
+  }
+
+  function showStamp(cardEl){
+    if(!cardEl) return;
+    const s = document.createElement('div');
+    s.className = 'stamp';
+    s.innerHTML = '<div class="stamp-seal">解決 SELESAI</div>';
+    cardEl.appendChild(s);
+    setTimeout(()=> s.remove(), 900);
+  }
+
+  function askDelete(id){
+    const p = state.problems.find(x=>x.id===id);
+    if(!p) return;
+    openConfirm('削', 'Hapus masalah ini?', `"${p.title}" akan dihapus permanen.`, ()=>{
+      state.problems = state.problems.filter(x=>x.id!==id);
+      saveData(); render();
+      toast('Masalah dihapus.', 'error');
+    });
+  }
+
+  /* ---------- form modal ---------- */
+  const formOverlay = document.getElementById('formOverlay');
+  const starPick = document.getElementById('starPick');
+  let currentStars = 0;
+
+  function setStars(n){
+    currentStars = n;
+    Array.from(starPick.children).forEach(s=>{
+      s.classList.toggle('on', Number(s.dataset.v) <= n);
+    });
+  }
+  starPick.addEventListener('click', (e)=>{
+    if(e.target.dataset.v) setStars(Number(e.target.dataset.v));
+  });
+
+  function openAdd(){
+    editingId = null;
+    document.getElementById('formTitle').textContent = 'Masalah baru';
+    ['title','what','who','when','where','why','how','tags'].forEach(k=>{
+      document.getElementById('f_'+k).value = '';
+    });
+    document.getElementById('f_pin').checked = false;
+    setStars(3);
+    formOverlay.classList.add('show');
+    setTimeout(()=>document.getElementById('f_title').focus(), 50);
+  }
+
+  function openEdit(id){
+    const p = state.problems.find(x=>x.id===id);
+    if(!p) return;
+    editingId = id;
+    document.getElementById('formTitle').textContent = 'Edit masalah';
+    document.getElementById('f_title').value = p.title;
+    document.getElementById('f_what').value = p.what;
+    document.getElementById('f_who').value = p.who;
+    document.getElementById('f_when').value = p.when;
+    document.getElementById('f_where').value = p.where;
+    document.getElementById('f_why').value = p.why;
+    document.getElementById('f_how').value = p.how;
+    document.getElementById('f_tags').value = (p.tags||[]).join(', ');
+    document.getElementById('f_pin').checked = !!p.pinned;
+    setStars(p.difficulty || 3);
+    formOverlay.classList.add('show');
+  }
+
+  function closeForm(){ formOverlay.classList.remove('show'); }
+
+  document.getElementById('addBtn').addEventListener('click', openAdd);
+  document.getElementById('formClose').addEventListener('click', closeForm);
+  document.getElementById('formCancel').addEventListener('click', closeForm);
+  formOverlay.addEventListener('click', (e)=>{ if(e.target === formOverlay) closeForm(); });
+
+  document.getElementById('formSave').addEventListener('click', ()=>{
+    const title = document.getElementById('f_title').value.trim();
+    if(!title){ toast('Judul masalah wajib diisi.', 'error'); return; }
+    const tags = document.getElementById('f_tags').value.split(',').map(t=>t.trim()).filter(Boolean);
+    const payload = {
+      title,
+      what: document.getElementById('f_what').value.trim(),
+      who: document.getElementById('f_who').value.trim(),
+      when: document.getElementById('f_when').value.trim(),
+      where: document.getElementById('f_where').value.trim(),
+      why: document.getElementById('f_why').value.trim(),
+      how: document.getElementById('f_how').value.trim(),
+      tags,
+      difficulty: currentStars || 1,
+      pinned: document.getElementById('f_pin').checked,
+    };
+
+    if(editingId){
+      const p = state.problems.find(x=>x.id===editingId);
+      Object.assign(p, payload, { updatedAt: Date.now() });
+      toast('Perubahan disimpan.', 'success');
+    } else {
+      state.problems.unshift(Object.assign({
+        id: uid(), solved:false, createdAt: Date.now(), updatedAt: Date.now()
+      }, payload));
+      toast('Masalah baru ditambahkan.', 'success');
+    }
+    saveData(); render(); closeForm();
+  });
+
+  /* ---------- confirm modal (delete / reset) ---------- */
+  const confirmOverlay = document.getElementById('confirmOverlay');
+  function openConfirm(kanji, title, msg, onOk){
+    document.getElementById('confirmKanji').textContent = kanji;
+    document.getElementById('confirmTitle').textContent = title;
+    document.getElementById('confirmMsg').textContent = msg;
+    pendingConfirm = onOk;
+    confirmOverlay.classList.add('show');
+  }
+  function closeConfirm(){ confirmOverlay.classList.remove('show'); pendingConfirm = null; }
+  document.getElementById('confirmCancel').addEventListener('click', closeConfirm);
+  confirmOverlay.addEventListener('click', (e)=>{ if(e.target === confirmOverlay) closeConfirm(); });
+  document.getElementById('confirmOk').addEventListener('click', ()=>{
+    if(pendingConfirm) pendingConfirm();
+    closeConfirm();
+  });
+
+  /* ---------- backup / restore / reset ---------- */
+  document.getElementById('exportBtn').addEventListener('click', ()=>{
+    const payload = { app:'mondaicho', exportedAt: new Date().toISOString(), problems: state.problems, settings: state.settings };
+    const blob = new Blob([JSON.stringify(payload, null, 2)], {type:'application/json'});
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = url;
+    a.download = 'mondaicho-backup-' + new Date().toISOString().slice(0,10) + '.json';
+    document.body.appendChild(a); a.click(); a.remove();
+    URL.revokeObjectURL(url);
+    toast('Backup berhasil diunduh.', 'success');
+  });
+
+  document.getElementById('importBtn').addEventListener('click', ()=>{
+    document.getElementById('importFile').click();
+  });
+  document.getElementById('importFile').addEventListener('change', (e)=>{
+    const file = e.target.files[0];
+    if(!file) return;
+    const reader = new FileReader();
+    reader.onload = () => {
+      try{
+        const data = JSON.parse(reader.result);
+        if(!Array.isArray(data.problems)) throw new Error('format tidak valid');
+        openConfirm('復', 'Pulihkan data?', 'Data saat ini akan digantikan oleh isi file backup ini.', ()=>{
+          state.problems = data.problems;
+          if(data.settings) state.settings = data.settings;
+          currentPage = 1;
+          saveData(); saveSettings(); applyTheme(); render();
+          toast('Data berhasil dipulihkan.', 'success');
+        });
+      }catch(err){
+        toast('Gagal membaca file backup.', 'error');
+      }
+    };
+    reader.readAsText(file);
+    e.target.value = '';
+  });
+
+  document.getElementById('resetBtn').addEventListener('click', ()=>{
+    openConfirm('消', 'Reset semua data?', 'Seluruh masalah dan pengaturan akan dihapus permanen dari perangkat ini.', ()=>{
+      state = { problems: [], settings: { theme:'light' } };
+      currentPage = 1;
+      try{ localStorage.removeItem(LS_DATA); localStorage.removeItem(LS_SETTINGS); }catch(e){}
+      applyTheme(); render();
+      toast('Semua data telah direset.', 'error');
+    });
+  });
+
+  /* ---------- filters live ---------- */
+  ['searchInput','tagFilter','statusFilter','sortSelect'].forEach(id=>{
+    const resetAndRender = ()=>{ currentPage = 1; render(); };
+    document.getElementById(id).addEventListener('input', resetAndRender);
+    document.getElementById(id).addEventListener('change', resetAndRender);
+  });
+
+  /* ---------- keyboard ---------- */
+  document.addEventListener('keydown', (e)=>{
+    if(e.key === 'Escape'){ closeForm(); closeConfirm(); }
+  });
+
+  /* ---------- init ---------- */
+  load();
+  applyTheme();
+  render();
+  initQuotes();
+})();
+</script>
+</body>
+</html>
